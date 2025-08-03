@@ -1,12 +1,12 @@
-# 🚀 Railway Deployment Guide
+# 🚀 Render Deployment Guide
 
-## Quick Deploy to Railway
+## Quick Deploy to Render
 
-[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/new/template)
+[![Deploy to Render](https://render.com/images/deploy-to-render.svg)](https://render.com)
 
 ## Environment Variables Required
 
-Set these variables in Railway:
+Set these variables in Render:
 
 | Variable | Description | Required |
 |----------|-------------|----------|
@@ -17,22 +17,29 @@ Set these variables in Railway:
 
 ## How to Deploy
 
-1. **Fork this repository** or **Import to Railway**
-2. **Connect to Railway:**
-   - Go to [railway.app](https://railway.app)
+1. **Fork this repository** or **Import to Render**
+2. **Connect to Render:**
+   - Go to [render.com](https://render.com)
    - Sign up with GitHub
-   - Click "New Project"
-   - Select "Deploy from GitHub repo"
+   - Click "New +" → "Web Service"
+   - Connect your GitHub repository
    - Choose this repository
 
-3. **Set Environment Variables:**
-   - In Railway dashboard, go to your project
-   - Click "Variables" tab
+3. **Configure Service:**
+   - **Name:** Location Updater Bot
+   - **Environment:** Python 3
+   - **Build Command:** `pip install -r requirements.txt`
+   - **Start Command:** `python main.py`
+   - **Instance Type:** Free (or Starter for better performance)
+
+4. **Set Environment Variables:**
+   - In Render dashboard, go to "Environment"
    - Add `BOT_TOKEN` with your actual bot token
    - Add `GOOGLE_MAPS_API_KEY` if you have one
 
-4. **Deploy:**
-   - Railway will automatically build and deploy
+5. **Deploy:**
+   - Click "Create Web Service"
+   - Render will automatically build and deploy
    - Your bot will be running 24/7
 
 ## Features
