@@ -19,6 +19,8 @@ import googlemaps
 from datetime import datetime, timedelta
 from concurrent.futures import ThreadPoolExecutor
 import threading
+from flask import Flask
+from threading import Thread
 
 # Load environment variables
 # Get the directory where this script is located
@@ -1979,9 +1981,35 @@ ETA: {distance_data['duration_text']}"""
             logger.error(f"Error starting bot: {e}")
             raise
 
+# Flask web server for Render health checks
+app = Flask(__name__)
+
+@app.route('/')
+def health_check():
+    return {
+        'status': 'running',
+        'service': 'Location Updater Bot',
+        'timestamp': datetime.now().isoformat()
+    }
+
+@app.route('/health')
+def health():
+    return {'status': 'healthy'}
+
+def run_flask():
+    """Run Flask server in a separate thread"""
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=False)
+
 def main():
     """Main function"""
     try:
+        # Start Flask server in background thread
+        flask_thread = Thread(target=run_flask, daemon=True)
+        flask_thread.start()
+        logger.info(f"Started Flask health check server on port {os.environ.get('PORT', 5000)}")
+        
+        # Start the bot
         bot = LocationBot()
         bot.run()
     except Exception as e:
