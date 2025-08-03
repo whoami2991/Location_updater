@@ -347,13 +347,26 @@ class LocationBot:
             
             for addr_variant in address_variations:
                 try:
-                    # Try exact search first
-                    url = f"https://nominatim.openstreetmap.org/search?q={addr_variant}&format=json&limit=3&countrycodes=us"
-                    headers = {'User-Agent': 'TelegramBot/1.0'}
+                    # Try exact search first with better URL encoding
+                    import urllib.parse
+                    encoded_address = urllib.parse.quote(addr_variant)
+                    url = f"https://nominatim.openstreetmap.org/search?q={encoded_address}&format=json&limit=3&countrycodes=us&addressdetails=1"
+                    headers = {
+                        'User-Agent': 'LocationBot/1.0 (Telegram Bot)',
+                        'Accept': 'application/json'
+                    }
                     
-                    response = requests.get(url, headers=headers, timeout=10)
+                    # Add delay to respect rate limits
+                    import time
+                    time.sleep(1)
+                    
+                    response = requests.get(url, headers=headers, timeout=15)
+                    logger.info(f"Nominatim response status: {response.status_code} for: {addr_variant}")
+                    
                     if response.status_code == 200:
                         data = response.json()
+                        logger.info(f"Nominatim response data: {len(data) if data else 0} results")
+                        
                         if data:
                             # Take the first result
                             lat, lon = float(data[0]['lat']), float(data[0]['lon'])
@@ -361,6 +374,8 @@ class LocationBot:
                             # Cache the result
                             self.set_geocoding_cache(address, lat, lon)
                             return lat, lon
+                    else:
+                        logger.warning(f"Nominatim returned status {response.status_code}: {response.text[:200]}")
                 except Exception as e:
                     logger.error(f"OpenStreetMap error for '{addr_variant}': {e}")
                     continue
