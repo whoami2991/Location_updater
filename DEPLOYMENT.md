@@ -1,5 +1,7 @@
 # 🚀 Render Deployment Guide
 
+<!-- Last updated: 2025-08-03 16:31 UTC -->
+
 ## Quick Deploy to Render
 
 [![Deploy to Render](https://render.com/images/deploy-to-render.svg)](https://render.com)
