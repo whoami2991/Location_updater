@@ -41,6 +41,7 @@ class LocationBot:
         self.authorized_users = [int(user_id) for user_id in os.getenv('AUTHORIZED_USERS', '').split(',') if user_id.strip()]
         self.eld_url = os.getenv('ELD_URL')
         self.google_maps_api_key = os.getenv('GOOGLE_MAPS_API_KEY')
+        self.opencage_api_key = os.getenv('OPENCAGE_API_KEY')
         
         # Load drivers configuration from JSON file
         # Use the script directory that was already determined
@@ -312,6 +313,48 @@ class LocationBot:
         self.geocoding_cache[address] = (lat, lon, datetime.now())
         logger.info(f"Cached geocoding for: {address} -> ({lat}, {lon})")
     
+    def geocode_with_opencage(self, address):
+        """Geocode address using OpenCage API"""
+        try:
+            if not self.opencage_api_key:
+                return None, None
+                
+            logger.info(f"Trying OpenCage geocoding for: {address}")
+            
+            import urllib.parse
+            encoded_address = urllib.parse.quote(address)
+            url = f"https://api.opencagedata.com/geocode/v1/json?q={encoded_address}&key={self.opencage_api_key}&limit=1&countrycode=us"
+            
+            headers = {
+                'User-Agent': 'LocationBot/1.0 (Telegram Bot)',
+                'Accept': 'application/json'
+            }
+            
+            response = requests.get(url, headers=headers, timeout=10)
+            logger.info(f"OpenCage API response status: {response.status_code}")
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('results') and len(data['results']) > 0:
+                    result = data['results'][0]
+                    geometry = result.get('geometry', {})
+                    lat, lng = geometry.get('lat'), geometry.get('lng')
+                    
+                    if lat is not None and lng is not None:
+                        logger.info(f"OpenCage geocoding successful: ({lat}, {lng}) for: {address}")
+                        return float(lat), float(lng)
+                    else:
+                        logger.warning(f"OpenCage returned invalid coordinates for: {address}")
+                else:
+                    logger.warning(f"OpenCage returned no results for: {address}")
+            else:
+                logger.error(f"OpenCage API error {response.status_code}: {response.text[:200]}")
+                
+        except Exception as e:
+            logger.error(f"OpenCage geocoding error for '{address}': {e}")
+            
+        return None, None
+    
     def geocode_address(self, address):
         """Get coordinates from address using multiple strategies and fallbacks"""
         try:
@@ -325,7 +368,16 @@ class LocationBot:
             # Get address variations
             address_variations = self.parse_and_clean_address(address)
             
-            # Try Google Maps first if available
+            # Try OpenCage API first if available
+            if self.opencage_api_key:
+                for addr_variant in address_variations:
+                    lat, lng = self.geocode_with_opencage(addr_variant)
+                    if lat is not None and lng is not None:
+                        # Cache the result
+                        self.set_geocoding_cache(address, lat, lng)
+                        return lat, lng
+            
+            # Try Google Maps if available
             if self.gmaps:
                 for addr_variant in address_variations:
                     try:
